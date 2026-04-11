@@ -199,7 +199,10 @@ function FreshKidsHighlights() {
         onPlaying={() => setIsLoading(false)}
         onEnded={() => { setIsPlaying(false); setShowOverlay(true); cancelAnimationFrame(rafRef.current); }}
         playsInline muted preload="metadata"
-      />
+        poster="/freshkids-poster.svg"
+      >
+        <track kind="chapters" src="/freshkids.vtt" srcLang="en" label="Chapters" default />
+      </video>
 
       {/* Loading spinner */}
       {isLoading && !showOverlay && (
@@ -437,7 +440,10 @@ function VocalStudioDemo() {
         playsInline
         muted={muted}
         preload="metadata"
-      />
+        poster="/vocal-studio-poster.svg"
+      >
+        <track kind="chapters" src="/vocal-studio.vtt" srcLang="en" label="Chapters" default />
+      </video>
 
       {/* Depth gradient */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />

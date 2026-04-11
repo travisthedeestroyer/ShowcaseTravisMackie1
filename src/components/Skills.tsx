@@ -1,39 +1,47 @@
 import { motion } from "motion/react";
+import { Zap, Brain, Server, Lock, Wrench, Layers, type LucideIcon } from "lucide-react";
 
-const skillGroups = [
+interface SkillGroup {
+  category: string;
+  icon: LucideIcon;
+  color: string;
+  skills: string[];
+}
+
+const skillGroups: SkillGroup[] = [
   {
     category: "Frontend",
-    icon: "⚡",
+    icon: Zap,
     color: "#3b82f6",
     skills: ["React 19", "TypeScript", "Vite", "Tailwind CSS 4", "Canvas / WebGL", "Web Audio API", "MediaRecorder"],
   },
   {
     category: "AI / Models",
-    icon: "🧠",
+    icon: Brain,
     color: "#8b5cf6",
     skills: ["Gemini 2.5 Flash / Pro", "Lyria Pro", "Veo 2", "Pollinations.ai", "Multi-agent orchestration", "Prompt engineering"],
   },
   {
     category: "Backend",
-    icon: "⚙️",
+    icon: Server,
     color: "#10b981",
     skills: ["Node.js", "Express", "FFmpeg", "Supabase", "PostgreSQL", "Edge Functions", "REST APIs"],
   },
   {
     category: "Payments & Auth",
-    icon: "🔐",
+    icon: Lock,
     color: "#f59e0b",
     skills: ["Stripe", "Token economies", "Webhooks", "Supabase Auth", "RLS policies", "COPPA compliance"],
   },
   {
     category: "Dev Tooling",
-    icon: "🛠️",
+    icon: Wrench,
     color: "#ec4899",
     skills: ["GitHub Codespaces", "AI coding agents", "Vercel", "TypeScript strict", "Vite HMR", "ESLint"],
   },
   {
     category: "Architecture",
-    icon: "🏗️",
+    icon: Layers,
     color: "#06b6d4",
     skills: ["Promise.all parallel agents", "Exponential backoff", "Error boundaries", "Zustand", "Typed callbacks", "IndexedDB"],
   },
@@ -82,10 +90,10 @@ export function Skills() {
             {/* Header */}
             <div className="flex items-center gap-3 mb-5 relative">
               <span
-                className="w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
+                className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
                 style={{ background: `${group.color}15` }}
               >
-                {group.icon}
+                <group.icon size={18} style={{ color: group.color }} />
               </span>
               <div
                 className="font-display text-xl font-bold"

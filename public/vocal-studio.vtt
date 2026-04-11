@@ -1,0 +1,22 @@
+WEBVTT
+
+00:00:00.000 --> 00:00:05.000
+[Record] User records vocals via MediaRecorder API
+
+00:00:05.000 --> 00:00:08.000
+Gemini Vocal Analyst processes tone, pitch, energy & genre
+
+00:00:08.000 --> 00:00:12.000
+[Generate] Lyric Writer + Beat Producer + Mix Engineer run in parallel
+
+00:00:12.000 --> 00:00:15.000
+[Mix] Lyria Pro generates an 8-bar beat loop at detected BPM
+
+00:00:15.000 --> 00:00:17.000
+Mix Engineer plans EQ, compression & reverb settings
+
+00:00:17.000 --> 00:00:22.000
+[Master] FFmpeg mastering chain: parametric EQ → multi-band compression → limiting
+
+00:00:22.000 --> 00:00:26.500
+Track reaches -14 LUFS / -1.0 dBTP true peak — streaming ready

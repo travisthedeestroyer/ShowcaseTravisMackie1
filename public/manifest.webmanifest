@@ -1,0 +1,19 @@
+{
+  "name": "Travis Mackie — AI Engineer",
+  "short_name": "Travis Mackie",
+  "description": "Solo AI engineer building production-grade, multi-agent platforms. From zero to shipped.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#0f172a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["portfolio", "technology", "business"]
+}

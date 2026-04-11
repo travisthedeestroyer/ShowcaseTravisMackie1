@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Upload, Eye, Zap, BookOpen, Heart, Sparkles, X, Key, ChevronDown, AlertCircle } from "lucide-react";
+import { Upload, Eye, Zap, BookOpen, Heart, Sparkles, X, Key, ChevronDown, AlertCircle, Copy, Check } from "lucide-react";
 import { GoogleGenAI, FileState } from "@google/genai";
 
 // ── Agent definitions ─────────────────────────────────────────────────────────
@@ -129,6 +129,9 @@ export function VideoIntelligence() {
   const [synthesis,       setSynthesis]       = useState("");
   const [synthesisStatus, setSynthesisStatus] = useState<AgentStatus>("idle");
 
+  const [copiedId, setCopiedId] = useState<AgentId | null>(null);
+  const [copiedSynthesis, setCopiedSynthesis] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const abortRef     = useRef(false);
 
@@ -144,7 +147,25 @@ export function VideoIntelligence() {
     if (file) loadVideo(file);
   };
 
+  const copyToClipboard = async (text: string, id: AgentId | "synthesis") => {
+    try {
+      await navigator.clipboard.writeText(text);
+      if (id === "synthesis") {
+        setCopiedSynthesis(true);
+        setTimeout(() => setCopiedSynthesis(false), 2000);
+      } else {
+        setCopiedId(id);
+        setTimeout(() => setCopiedId(null), 2000);
+      }
+    } catch { /* ignore */ }
+  };
+
   const loadVideo = (file: File) => {
+    const MAX_MB = 500;
+    if (file.size > MAX_MB * 1024 * 1024) {
+      setError(`File too large (${(file.size / 1024 / 1024).toFixed(0)} MB). Max ${MAX_MB} MB.`);
+      return;
+    }
     if (videoUrl) URL.revokeObjectURL(videoUrl);
     setVideoFile(file);
     setVideoUrl(URL.createObjectURL(file));
@@ -301,7 +322,7 @@ Write the unified description now. Make it read as a single authoritative docume
   const agentActive = globalStatus === "analyzing" || globalStatus === "synthesizing" || globalStatus === "complete";
 
   return (
-    <section id="pipeline" className="px-0 sm:px-6 max-w-[1200px] mx-auto w-full">
+    <section id="work" className="px-0 sm:px-6 max-w-[1200px] mx-auto w-full">
 
       {/* Section header */}
       <div className="mb-12 sm:mb-16 text-center px-6">
@@ -463,7 +484,7 @@ Write the unified description now. Make it read as a single authoritative docume
                   </motion.div>
                   <div className="text-center">
                     <p className="text-sm font-medium text-white/70">Drop video here</p>
-                    <p className="text-xs text-white/30 mt-1">or click to browse · MP4, MOV, WebM</p>
+                    <p className="text-xs text-white/30 mt-1">or click to browse · MP4, MOV, WebM · max 500 MB</p>
                   </div>
 
                   <input
@@ -563,6 +584,29 @@ Write the unified description now. Make it read as a single authoritative docume
                 </span>
               </button>
 
+              {/* Cancel button */}
+              <AnimatePresence>
+                {isRunning && (
+                  <motion.button
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.2 }}
+                    onClick={() => {
+                      abortRef.current = true;
+                      setGlobalStatus("idle");
+                      setResults(AGENTS.map((a) => ({ id: a.id, status: "idle", text: "" })));
+                      setSynthesis("");
+                      setSynthesisStatus("idle");
+                      setUploadPct(0);
+                    }}
+                    className="w-full py-2 rounded-xl border border-red-500/20 hover:border-red-500/40 text-red-400/60 hover:text-red-400 text-xs font-mono uppercase tracking-widest transition-all"
+                  >
+                    Cancel
+                  </motion.button>
+                )}
+              </AnimatePresence>
+
               {/* Status legend */}
               {agentActive && (
                 <motion.div
@@ -627,6 +671,15 @@ Write the unified description now. Make it read as a single authoritative docume
                       </div>
                       <div className="flex items-center gap-2">
                         {active && <ProcessingBars color={agent.color} />}
+                        {done && (
+                          <button
+                            onClick={() => copyToClipboard(result.text, agent.id)}
+                            className="text-white/20 hover:text-white/60 transition-colors"
+                            title="Copy result"
+                          >
+                            {copiedId === agent.id ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                          </button>
+                        )}
                         <StatusDot status={result.status} color={agent.color} />
                       </div>
                     </div>
@@ -683,7 +736,16 @@ Write the unified description now. Make it read as a single authoritative docume
                       {synthesisStatus === "processing" ? "Weaving agent reports…" : "Analysis complete"}
                     </div>
                   </div>
-                  <div className="ml-auto">
+                  <div className="ml-auto flex items-center gap-3">
+                    {synthesisStatus === "complete" && (
+                      <button
+                        onClick={() => copyToClipboard(synthesis, "synthesis")}
+                        className="text-white/30 hover:text-white/70 transition-colors"
+                        title="Copy synthesis"
+                      >
+                        {copiedSynthesis ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                      </button>
+                    )}
                     <StatusDot status={synthesisStatus} color="#a78bfa" />
                   </div>
                 </div>

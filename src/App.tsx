@@ -1,4 +1,5 @@
 import { motion } from "motion/react";
+import { Analytics } from "@vercel/analytics/react";
 import { CustomCursor } from "./components/CustomCursor";
 import { Navbar } from "./components/Navbar";
 import { Hero } from "./components/Hero";
@@ -13,6 +14,14 @@ import { Footer } from "./components/Footer";
 export default function App() {
   return (
     <div className="relative min-h-screen bg-bg overflow-hidden">
+
+      {/* Skip to main content — visible only on keyboard focus */}
+      <a
+        href="#about"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[9999] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-blue-600 focus:text-white focus:font-bold focus:shadow-lg"
+      >
+        Skip to main content
+      </a>
 
       {/* Ambient Background Glows — slowly drift */}
       <motion.div
@@ -48,6 +57,9 @@ export default function App() {
       </main>
 
       <Footer />
+
+      {/* Vercel Analytics — tracks page views, no PII collected */}
+      <Analytics />
     </div>
   );
 }

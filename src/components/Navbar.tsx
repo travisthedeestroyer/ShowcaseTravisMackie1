@@ -21,6 +21,14 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Escape key closes mobile menu
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setMenuOpen(false); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
+
   // Scroll-spy: track which section is in the viewport
   useEffect(() => {
     const sections = navItems.map(({ id }) => document.getElementById(id)).filter(Boolean) as HTMLElement[];
@@ -47,13 +55,13 @@ export function Navbar() {
         className="glass-panel !rounded-full px-5 sm:px-8 py-3 sm:py-4 flex items-center justify-between gap-8 sm:gap-16 transition-shadow duration-300"
         style={{ boxShadow: scrolled ? "0 8px 32px rgba(0,0,0,0.12), 0 0 0 1px rgba(255,255,255,0.5) inset" : undefined }}
       >
-        <a href="#hero" className="font-display font-bold text-lg tracking-tight text-ink flex items-center gap-2.5 flex-shrink-0">
+        <a href="#hero" aria-label="Travis Mackie — Home" className="font-display font-bold text-lg tracking-tight text-ink flex items-center gap-2.5 flex-shrink-0">
           <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shadow-[0_0_10px_rgba(59,130,246,0.8)]" />
           TM
         </a>
 
         {/* Desktop nav */}
-        <ul className="hidden sm:flex items-center gap-8">
+        <ul className="hidden sm:flex items-center gap-8" role="list">
           {navItems.map(({ label, id }) => {
             const isActive = activeId === id;
             return (
@@ -61,6 +69,7 @@ export function Navbar() {
                 <a
                   href={`#${id}`}
                   className={`text-sm font-medium transition-colors ${isActive ? "text-ink" : "text-ink-dim hover:text-ink"}`}
+                  aria-current={isActive ? "true" : undefined}
                 >
                   {label}
                 </a>
@@ -79,9 +88,9 @@ export function Navbar() {
         {/* Hire Me CTA */}
         <a
           href="mailto:travisbishopmackie@gmail.com"
-          className="hidden sm:block text-sm font-bold bg-ink text-white px-5 py-2 rounded-full hover:scale-105 active:scale-95 transition-transform relative overflow-hidden"
+          className="hidden sm:block text-sm font-bold bg-ink text-white px-5 py-2 rounded-full hover:scale-105 active:scale-95 transition-transform"
         >
-          <span className="relative z-10">Hire Me</span>
+          Hire Me
         </a>
 
         {/* Mobile hamburger */}
@@ -90,6 +99,7 @@ export function Navbar() {
           onClick={() => setMenuOpen(!menuOpen)}
           aria-label={menuOpen ? "Close menu" : "Open menu"}
           aria-expanded={menuOpen}
+          aria-controls="mobile-menu"
         >
           <AnimatePresence mode="wait" initial={false}>
             {menuOpen
@@ -104,6 +114,7 @@ export function Navbar() {
       <AnimatePresence>
         {menuOpen && (
           <motion.div
+            id="mobile-menu"
             initial={{ opacity: 0, y: -8, scale: 0.97 }}
             animate={{ opacity: 1, y: 0,  scale: 1    }}
             exit={{    opacity: 0, y: -8, scale: 0.97 }}

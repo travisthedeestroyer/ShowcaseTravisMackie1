@@ -1,7 +1,16 @@
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { ChevronDown } from "lucide-react";
+import { useState, useEffect } from "react";
 
 export function Hero() {
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => { if (window.scrollY > 80) setScrolled(true); };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
     <section id="hero" className="min-h-[90vh] flex flex-col items-center justify-center relative px-6 pt-20">
       <div className="max-w-[1000px] w-full text-center relative z-10">
@@ -63,23 +72,28 @@ export function Hero() {
         </motion.div>
       </div>
 
-      {/* Scroll indicator */}
-      <motion.a
-        href="#about"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 1, delay: 1.2 }}
-        className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-ink-dim hover:text-ink transition-colors group"
-        aria-label="Scroll to About"
-      >
-        <span className="font-mono text-[0.6rem] uppercase tracking-widest opacity-60 group-hover:opacity-100 transition-opacity">Scroll</span>
-        <motion.div
-          animate={{ y: [0, 6, 0] }}
-          transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <ChevronDown size={18} strokeWidth={1.5} />
-        </motion.div>
-      </motion.a>
+      {/* Scroll indicator — hides once user scrolls */}
+      <AnimatePresence>
+        {!scrolled && (
+          <motion.a
+            href="#about"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.6, delay: 1.2 }}
+            className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-ink-dim hover:text-ink transition-colors group"
+            aria-label="Scroll to About"
+          >
+            <span className="font-mono text-[0.6rem] uppercase tracking-widest opacity-60 group-hover:opacity-100 transition-opacity">Scroll</span>
+            <motion.div
+              animate={{ y: [0, 6, 0] }}
+              transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <ChevronDown size={18} strokeWidth={1.5} />
+            </motion.div>
+          </motion.a>
+        )}
+      </AnimatePresence>
     </section>
   );
 }
