@@ -1,6 +1,6 @@
 import React, { useRef, useState, useCallback, useEffect } from "react";
-import { motion } from "motion/react";
-import { ExternalLink, Play, Pause, Volume2, VolumeX } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+import { ExternalLink, Play, Pause, Volume2, VolumeX, Maximize2, Minimize2 } from "lucide-react";
 
 interface ProjectCardProps {
   subtitle: string;
@@ -20,6 +20,60 @@ interface Chapter {
   color: string;
 }
 
+// ── Shared helper: format seconds → M:SS ─────────────────────────────────────
+function fmt(s: number): string {
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${m}:${sec.toString().padStart(2, "0")}`;
+}
+
+// ── Shared hook: drag-scrub (mouse + touch) ───────────────────────────────────
+function useDragScrub(
+  progressRef: React.RefObject<HTMLDivElement | null>,
+  duration: number,
+  onSeek: (t: number) => void
+) {
+  const dragging = useRef(false);
+
+  const seek = useCallback(
+    (clientX: number) => {
+      if (!progressRef.current) return;
+      const rect = progressRef.current.getBoundingClientRect();
+      const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      onSeek(pct * duration);
+    },
+    [duration, onSeek, progressRef]
+  );
+
+  const onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    dragging.current = true;
+    seek(e.clientX);
+  };
+
+  const onTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    dragging.current = true;
+    seek(e.touches[0].clientX);
+  };
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => { if (dragging.current) seek(e.clientX); };
+    const onTMove = (e: TouchEvent) => { if (dragging.current) seek(e.touches[0].clientX); };
+    const stop = () => { dragging.current = false; };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", stop);
+    window.addEventListener("touchmove", onTMove, { passive: true });
+    window.addEventListener("touchend", stop);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", stop);
+      window.removeEventListener("touchmove", onTMove);
+      window.removeEventListener("touchend", stop);
+    };
+  }, [seek]);
+
+  return { onMouseDown, onTouchStart };
+}
+
 const CHAPTERS: Chapter[] = [
   { label: "Landing & Auth",   time: 0,  icon: "◈", color: "#3b82f6" },
   { label: "Voice Director",   time: 14, icon: "◉", color: "#8b5cf6" },
@@ -32,12 +86,17 @@ const CHAPTERS: Chapter[] = [
 function FreshKidsHighlights() {
   const videoRef    = useRef<HTMLVideoElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
+  const wrapRef     = useRef<HTMLDivElement>(null);
   const rafRef      = useRef<number>(0);
   const [isPlaying,     setIsPlaying]     = useState(false);
   const [currentTime,   setCurrentTime]   = useState(0);
   const [duration,      setDuration]      = useState(64);
   const [activeChapter, setActiveChapter] = useState(0);
   const [showOverlay,   setShowOverlay]   = useState(true);
+  const [chapterToast,  setChapterToast]  = useState<string | null>(null);
+  const [isFullscreen,  setIsFullscreen]  = useState(false);
+  const [isLoading,     setIsLoading]     = useState(true);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const syncTime = useCallback(() => {
     if (!videoRef.current) return;
@@ -51,7 +110,33 @@ function FreshKidsHighlights() {
     if (!videoRef.current.paused) rafRef.current = requestAnimationFrame(syncTime);
   }, []);
 
-  useEffect(() => () => cancelAnimationFrame(rafRef.current), []);
+  useEffect(() => () => {
+    cancelAnimationFrame(rafRef.current);
+    clearTimeout(toastTimer.current);
+  }, []);
+
+  // Fullscreen change listener
+  useEffect(() => {
+    const onChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+
+  // Keyboard shortcuts when focused
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === " " || e.key === "k") { e.preventDefault(); togglePlay(); }
+    if (e.key === "ArrowRight") { if (videoRef.current) videoRef.current.currentTime = Math.min(duration, currentTime + 5); }
+    if (e.key === "ArrowLeft")  { if (videoRef.current) videoRef.current.currentTime = Math.max(0, currentTime - 5); }
+    if (e.key === "f") toggleFullscreen();
+  };
+
+  const handleSeek = useCallback((t: number) => {
+    if (!videoRef.current) return;
+    videoRef.current.currentTime = t;
+    setCurrentTime(t);
+  }, []);
+
+  const { onMouseDown, onTouchStart } = useDragScrub(progressRef, duration, handleSeek);
 
   const jumpToChapter = (ch: Chapter, idx: number) => {
     if (!videoRef.current) return;
@@ -62,6 +147,10 @@ function FreshKidsHighlights() {
     setShowOverlay(false);
     cancelAnimationFrame(rafRef.current);
     rafRef.current = requestAnimationFrame(syncTime);
+    // Show chapter toast
+    clearTimeout(toastTimer.current);
+    setChapterToast(ch.label);
+    toastTimer.current = setTimeout(() => setChapterToast(null), 1800);
   };
 
   const togglePlay = () => {
@@ -77,12 +166,13 @@ function FreshKidsHighlights() {
     setIsPlaying(!isPlaying);
   };
 
-  const scrub = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!videoRef.current || !progressRef.current) return;
-    const rect = progressRef.current.getBoundingClientRect();
-    const pct  = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    videoRef.current.currentTime = pct * duration;
-    setCurrentTime(pct * duration);
+  const toggleFullscreen = () => {
+    if (!wrapRef.current) return;
+    if (!document.fullscreenElement) {
+      wrapRef.current.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
   };
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
@@ -90,17 +180,50 @@ function FreshKidsHighlights() {
 
   return (
     <div
-      className="relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl select-none group/vp"
+      ref={wrapRef}
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+      className="relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl select-none group/vp outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
       style={{ willChange: "transform", transform: "translateZ(0)" }}
     >
       <video
         ref={videoRef}
         src="/freshkids-demo.mp4"
         className="w-full h-full object-cover"
-        onLoadedMetadata={() => { if (videoRef.current) setDuration(videoRef.current.duration); }}
+        onLoadedMetadata={() => {
+          if (videoRef.current) setDuration(videoRef.current.duration);
+          setIsLoading(false);
+        }}
+        onCanPlay={() => setIsLoading(false)}
+        onWaiting={() => setIsLoading(true)}
+        onPlaying={() => setIsLoading(false)}
         onEnded={() => { setIsPlaying(false); setShowOverlay(true); cancelAnimationFrame(rafRef.current); }}
         playsInline muted preload="metadata"
       />
+
+      {/* Loading spinner */}
+      {isLoading && !showOverlay && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+          <div className="w-10 h-10 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+        </div>
+      )}
+
+      {/* Chapter toast */}
+      <AnimatePresence>
+        {chapterToast && (
+          <motion.div
+            key={chapterToast}
+            initial={{ opacity: 0, y: -8, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className="absolute top-4 left-1/2 -translate-x-1/2 z-40 px-4 py-1.5 rounded-full bg-black/80 backdrop-blur-sm text-white font-mono text-xs uppercase tracking-wider whitespace-nowrap pointer-events-none"
+            style={{ borderColor: chapter.color, border: `1px solid ${chapter.color}66` }}
+          >
+            <span style={{ color: chapter.color }}>{chapter.icon}</span> {chapterToast}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {showOverlay && (
         <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-4 bg-black/40 backdrop-blur-sm">
@@ -111,6 +234,7 @@ function FreshKidsHighlights() {
           >
             <Play size={24} className="ml-1" />
           </button>
+          <div className="font-mono text-[0.6rem] text-white/40 uppercase tracking-widest mt-1">MYCARTOON.ORG</div>
         </div>
       )}
 
@@ -119,14 +243,21 @@ function FreshKidsHighlights() {
           !isPlaying ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 group-hover/vp:opacity-100 group-hover/vp:translate-y-0"
         }`}
       >
+        {/* Progress bar */}
         <div
           ref={progressRef}
-          className="relative h-1.5 bg-white/20 cursor-pointer mx-4 mb-2 rounded-full overflow-hidden"
-          onClick={scrub}
+          className="relative h-1.5 bg-white/20 cursor-pointer mx-4 mb-2 rounded-full"
+          onMouseDown={onMouseDown}
+          onTouchStart={onTouchStart}
         >
           <div
             className="absolute left-0 top-0 h-full rounded-full"
             style={{ width: `${progress}%`, background: chapter.color, transition: "width 0.05s linear" }}
+          />
+          {/* Scrub thumb */}
+          <div
+            className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white shadow-lg -translate-x-1/2 transition-[left] duration-75"
+            style={{ left: `${progress}%` }}
           />
           {CHAPTERS.map((ch, i) => (
             <div key={i} className="absolute top-0 w-px h-full opacity-40"
@@ -135,9 +266,15 @@ function FreshKidsHighlights() {
         </div>
 
         <div className="flex items-center gap-3 px-4 pb-3 bg-gradient-to-t from-black/80 to-transparent pt-2">
-          <button onClick={togglePlay} className="text-white hover:text-blue-400 transition-colors">
+          <button onClick={togglePlay} className="text-white hover:text-blue-400 transition-colors flex-shrink-0">
             {isPlaying ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
           </button>
+
+          {/* Time display */}
+          <span className="font-mono text-[0.55rem] text-white/50 flex-shrink-0 tabular-nums">
+            {fmt(currentTime)} / {fmt(duration)}
+          </span>
+
           <div className="flex gap-1.5 overflow-x-auto scrollbar-hide flex-1">
             {CHAPTERS.map((ch, i) => (
               <button
@@ -154,6 +291,10 @@ function FreshKidsHighlights() {
               </button>
             ))}
           </div>
+
+          <button onClick={toggleFullscreen} className="text-white/50 hover:text-white transition-colors flex-shrink-0">
+            {isFullscreen ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+          </button>
         </div>
       </div>
     </div>
@@ -171,6 +312,7 @@ const VOCAL_CHAPTERS = [
 function VocalStudioDemo() {
   const videoRef    = useRef<HTMLVideoElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
+  const wrapRef     = useRef<HTMLDivElement>(null);
   const rafRef      = useRef<number>(0);
   const [isPlaying,     setIsPlaying]     = useState(false);
   const [currentTime,   setCurrentTime]   = useState(0);
@@ -178,6 +320,10 @@ function VocalStudioDemo() {
   const [activeChapter, setActiveChapter] = useState(0);
   const [showOverlay,   setShowOverlay]   = useState(true);
   const [muted,         setMuted]         = useState(true);
+  const [chapterToast,  setChapterToast]  = useState<string | null>(null);
+  const [isFullscreen,  setIsFullscreen]  = useState(false);
+  const [isLoading,     setIsLoading]     = useState(true);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const syncTime = useCallback(() => {
     if (!videoRef.current) return;
@@ -191,12 +337,38 @@ function VocalStudioDemo() {
     if (!videoRef.current.paused) rafRef.current = requestAnimationFrame(syncTime);
   }, []);
 
-  useEffect(() => () => cancelAnimationFrame(rafRef.current), []);
+  useEffect(() => () => {
+    cancelAnimationFrame(rafRef.current);
+    clearTimeout(toastTimer.current);
+  }, []);
+
+  useEffect(() => {
+    const onChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
 
   const handleLoaded = () => {
     if (!videoRef.current) return;
     setDuration(videoRef.current.duration);
     videoRef.current.playbackRate = 0.65;
+    setIsLoading(false);
+  };
+
+  const handleSeek = useCallback((t: number) => {
+    if (!videoRef.current) return;
+    videoRef.current.currentTime = t;
+    setCurrentTime(t);
+  }, []);
+
+  const { onMouseDown, onTouchStart } = useDragScrub(progressRef, duration, handleSeek);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === " " || e.key === "k") { e.preventDefault(); togglePlay(); }
+    if (e.key === "ArrowRight") { if (videoRef.current) videoRef.current.currentTime = Math.min(duration, currentTime + 5); }
+    if (e.key === "ArrowLeft")  { if (videoRef.current) videoRef.current.currentTime = Math.max(0, currentTime - 5); }
+    if (e.key === "m") toggleMute();
+    if (e.key === "f") toggleFullscreen();
   };
 
   const jumpToChapter = (ch: typeof VOCAL_CHAPTERS[0], idx: number) => {
@@ -208,6 +380,9 @@ function VocalStudioDemo() {
     setShowOverlay(false);
     cancelAnimationFrame(rafRef.current);
     rafRef.current = requestAnimationFrame(syncTime);
+    clearTimeout(toastTimer.current);
+    setChapterToast(ch.label);
+    toastTimer.current = setTimeout(() => setChapterToast(null), 1800);
   };
 
   const togglePlay = () => {
@@ -223,14 +398,6 @@ function VocalStudioDemo() {
     setIsPlaying(!isPlaying);
   };
 
-  const scrub = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!videoRef.current || !progressRef.current) return;
-    const rect = progressRef.current.getBoundingClientRect();
-    const pct  = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    videoRef.current.currentTime = pct * duration;
-    setCurrentTime(pct * duration);
-  };
-
   const toggleMute = () => {
     if (!videoRef.current) return;
     const next = !muted;
@@ -238,12 +405,24 @@ function VocalStudioDemo() {
     setMuted(next);
   };
 
+  const toggleFullscreen = () => {
+    if (!wrapRef.current) return;
+    if (!document.fullscreenElement) {
+      wrapRef.current.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  };
+
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
   const chapter  = VOCAL_CHAPTERS[activeChapter];
 
   return (
     <div
-      className="relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl select-none group/vp"
+      ref={wrapRef}
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+      className="relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl select-none group/vp outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
       style={{ willChange: "transform", transform: "translateZ(0)" }}
     >
       <video
@@ -251,6 +430,9 @@ function VocalStudioDemo() {
         src="/vocal-studio-demo-slow.mp4"
         className="w-full h-full object-cover"
         onLoadedMetadata={handleLoaded}
+        onCanPlay={() => setIsLoading(false)}
+        onWaiting={() => setIsLoading(true)}
+        onPlaying={() => setIsLoading(false)}
         onEnded={() => { setIsPlaying(false); setShowOverlay(true); cancelAnimationFrame(rafRef.current); }}
         playsInline
         muted={muted}
@@ -259,6 +441,30 @@ function VocalStudioDemo() {
 
       {/* Depth gradient */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
+
+      {/* Loading spinner */}
+      {isLoading && !showOverlay && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+          <div className="w-10 h-10 rounded-full border-2 border-white/20 border-t-rose-400 animate-spin" />
+        </div>
+      )}
+
+      {/* Chapter toast */}
+      <AnimatePresence>
+        {chapterToast && (
+          <motion.div
+            key={chapterToast}
+            initial={{ opacity: 0, y: -8, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className="absolute top-4 left-1/2 -translate-x-1/2 z-40 px-4 py-1.5 rounded-full bg-black/80 backdrop-blur-sm text-white font-mono text-xs uppercase tracking-wider whitespace-nowrap pointer-events-none"
+            style={{ border: `1px solid ${chapter.color}66` }}
+          >
+            <span style={{ color: chapter.color }}>{chapter.icon}</span> {chapterToast}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {showOverlay && (
         <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-4 bg-black/50 backdrop-blur-sm">
@@ -278,14 +484,21 @@ function VocalStudioDemo() {
           !isPlaying ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 group-hover/vp:opacity-100 group-hover/vp:translate-y-0"
         }`}
       >
+        {/* Progress bar */}
         <div
           ref={progressRef}
-          className="relative h-1.5 bg-white/20 cursor-pointer mx-4 mb-2 rounded-full overflow-hidden"
-          onClick={scrub}
+          className="relative h-1.5 bg-white/20 cursor-pointer mx-4 mb-2 rounded-full"
+          onMouseDown={onMouseDown}
+          onTouchStart={onTouchStart}
         >
           <div
             className="absolute left-0 top-0 h-full rounded-full"
             style={{ width: `${progress}%`, background: chapter.color, transition: "width 0.05s linear" }}
+          />
+          {/* Scrub thumb */}
+          <div
+            className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white shadow-lg -translate-x-1/2 transition-[left] duration-75"
+            style={{ left: `${progress}%` }}
           />
           {VOCAL_CHAPTERS.map((ch, i) => (
             <div key={i} className="absolute top-0 w-px h-full opacity-40"
@@ -294,9 +507,15 @@ function VocalStudioDemo() {
         </div>
 
         <div className="flex items-center gap-3 px-4 pb-3 bg-gradient-to-t from-black/80 to-transparent pt-2">
-          <button onClick={togglePlay} className="text-white hover:text-rose-400 transition-colors">
+          <button onClick={togglePlay} className="text-white hover:text-rose-400 transition-colors flex-shrink-0">
             {isPlaying ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
           </button>
+
+          {/* Time display */}
+          <span className="font-mono text-[0.55rem] text-white/50 flex-shrink-0 tabular-nums">
+            {fmt(currentTime)} / {fmt(duration)}
+          </span>
+
           <div className="flex gap-1.5 overflow-x-auto scrollbar-hide flex-1">
             {VOCAL_CHAPTERS.map((ch, i) => (
               <button
@@ -313,10 +532,155 @@ function VocalStudioDemo() {
               </button>
             ))}
           </div>
+
           <button onClick={toggleMute} className="text-white/60 hover:text-white transition-colors flex-shrink-0">
             {muted ? <VolumeX size={14} /> : <Volume2 size={14} />}
           </button>
+          <button onClick={toggleFullscreen} className="text-white/50 hover:text-white transition-colors flex-shrink-0">
+            {isFullscreen ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+          </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Remix Vocal Studio Pro — animated pipeline visualization ──────────────────
+const PIPELINE_NODES = [
+  { id: "input",    label: "Vocal Input",    icon: "🎤", color: "#8b5cf6", x: 0 },
+  { id: "analyst",  label: "Analyst",        icon: "🔬", color: "#a78bfa", x: 1 },
+  { id: "lyrics",   label: "Lyric Writer",   icon: "✍️",  color: "#ec4899", x: 2, parallel: true },
+  { id: "beat",     label: "Beat Producer",  icon: "🎹", color: "#f43f5e", x: 2, parallel: true },
+  { id: "ar",       label: "A&R Review",     icon: "🎧", color: "#f97316", x: 2, parallel: true },
+  { id: "mix",      label: "Mix Engineer",   icon: "🎛️", color: "#06b6d4", x: 3 },
+  { id: "ffmpeg",   label: "FFmpeg Master",  icon: "⚙️",  color: "#10b981", x: 4 },
+];
+
+function AgentPipelineViz() {
+  const [activeNode, setActiveNode] = useState(0);
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setTick(t => t + 1);
+      setActiveNode(n => (n + 1) % PIPELINE_NODES.length);
+    }, 1100);
+    return () => clearInterval(id);
+  }, []);
+
+  const cols = [
+    PIPELINE_NODES.filter(n => n.x === 0),
+    PIPELINE_NODES.filter(n => n.x === 1),
+    PIPELINE_NODES.filter(n => n.x === 2),
+    PIPELINE_NODES.filter(n => n.x === 3),
+    PIPELINE_NODES.filter(n => n.x === 4),
+  ];
+
+  return (
+    <div
+      className="w-full rounded-xl overflow-hidden bg-[#0a0a0f] border border-white/5 shadow-2xl select-none"
+      style={{ willChange: "transform", transform: "translateZ(0)" }}
+    >
+      {/* Terminal bar */}
+      <div className="flex items-center gap-1.5 px-4 py-3 border-b border-white/5">
+        <div className="w-3 h-3 rounded-full bg-[#ff5f57]" />
+        <div className="w-3 h-3 rounded-full bg-[#febc2e]" />
+        <div className="w-3 h-3 rounded-full bg-[#28c840]" />
+        <span className="ml-3 font-mono text-[0.6rem] text-white/30 uppercase tracking-widest">6-Agent Pipeline · Promise.all</span>
+      </div>
+
+      {/* Pipeline columns */}
+      <div className="flex items-center justify-between px-4 py-6 gap-2">
+        {cols.map((col, ci) => (
+          <React.Fragment key={ci}>
+            {/* Connector arrow between columns */}
+            {ci > 0 && (
+              <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                <motion.div
+                  animate={{ scaleX: [0.4, 1, 0.4], opacity: [0.3, 0.9, 0.3] }}
+                  transition={{ duration: 1.1, repeat: Infinity, ease: "easeInOut", delay: ci * 0.15 }}
+                  className="h-px w-6 sm:w-10 bg-gradient-to-r from-transparent via-white/50 to-transparent"
+                />
+              </div>
+            )}
+            {/* Column of nodes */}
+            <div className={`flex flex-col gap-2 ${col.length > 1 ? "items-center" : ""}`}>
+              {col.length > 1 && (
+                <div className="font-mono text-[0.45rem] text-white/20 uppercase tracking-widest text-center mb-1">parallel</div>
+              )}
+              {col.map((node) => {
+                const isActive = PIPELINE_NODES[activeNode].id === node.id;
+                return (
+                  <motion.div
+                    key={node.id}
+                    animate={isActive ? {
+                      boxShadow: [`0 0 0px ${node.color}00`, `0 0 20px ${node.color}88`, `0 0 0px ${node.color}00`],
+                    } : { boxShadow: `0 0 0px ${node.color}00` }}
+                    transition={{ duration: 0.9, ease: "easeInOut" }}
+                    className="flex flex-col items-center gap-1 px-2 py-2 rounded-lg border transition-colors duration-300"
+                    style={{
+                      borderColor: isActive ? `${node.color}88` : "rgba(255,255,255,0.06)",
+                      background: isActive ? `${node.color}12` : "rgba(255,255,255,0.02)",
+                      minWidth: "52px",
+                    }}
+                  >
+                    <span className="text-base leading-none">{node.icon}</span>
+                    <span
+                      className="font-mono text-[0.4rem] uppercase tracking-wide text-center leading-tight"
+                      style={{ color: isActive ? node.color : "rgba(255,255,255,0.35)" }}
+                    >
+                      {node.label}
+                    </span>
+                    {isActive && (
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: "100%" }}
+                        transition={{ duration: 1.0, ease: "linear" }}
+                        className="h-px mt-0.5"
+                        style={{ background: node.color }}
+                      />
+                    )}
+                  </motion.div>
+                );
+              })}
+            </div>
+          </React.Fragment>
+        ))}
+      </div>
+
+      {/* Live log lines */}
+      <div className="border-t border-white/5 px-4 py-3 space-y-1 h-[72px] overflow-hidden">
+        <AnimatePresence mode="popLayout">
+          {[0, 1].map((offset) => {
+            const ni = (activeNode - offset + PIPELINE_NODES.length) % PIPELINE_NODES.length;
+            const n = PIPELINE_NODES[ni];
+            return (
+              <motion.div
+                key={`${tick}-${offset}`}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: offset === 0 ? 1 : 0.35, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className="font-mono text-[0.55rem] flex items-center gap-2"
+              >
+                <span style={{ color: n.color }}>▶</span>
+                <span className="text-white/60">
+                  {offset === 0 ? "running" : "done"}
+                </span>
+                <span style={{ color: n.color }}>{n.label}</span>
+                {offset === 0 && (
+                  <motion.span
+                    animate={{ opacity: [1, 0, 1] }}
+                    transition={{ duration: 0.8, repeat: Infinity }}
+                    className="text-white/30"
+                  >
+                    ···
+                  </motion.span>
+                )}
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
       </div>
     </div>
   );
@@ -459,6 +823,7 @@ export function Projects() {
             "Exponential backoff retry logic with rate limit handling (429/503 errors)",
           ]}
           tech={["React", "TypeScript", "Gemini 2.5 Flash", "Lyria Pro", "FFmpeg", "Web Audio API"]}
+          media={<AgentPipelineViz />}
         />
       </div>
     </section>
