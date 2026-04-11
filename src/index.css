@@ -13,10 +13,17 @@
 }
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+    text-rendering: optimizeLegibility;
+  }
+
   body {
     @apply bg-bg text-ink font-sans antialiased selection:bg-black/10 selection:text-black;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Promote fixed background glows to their own compositor layer */
+    isolation: isolate;
   }
 
   .scrollbar-hide {
@@ -31,12 +38,36 @@
     outline: 2px solid rgba(0, 0, 0, 0.5);
     outline-offset: 2px;
   }
+
+  /* Smooth motion for all interactive elements */
+  button, a {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Ensure video containers get GPU layer */
+  video {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
 }
 
 .glass-panel {
   @apply bg-white/60 border border-black/[0.05] backdrop-blur-2xl rounded-3xl shadow-xl;
+  /* Promote glass panels to compositor layer to avoid backdrop-blur repaints */
+  transform: translateZ(0);
 }
 
 .text-gradient {
   @apply bg-clip-text text-transparent bg-gradient-to-b from-slate-800 to-slate-500;
+}
+
+/* Smooth framer motion defaults */
+[data-framer-component-type] {
+  will-change: auto;
+}
+
+/* Fixed glow orbs get their own layer */
+.fixed.blur-\[120px\] {
+  transform: translateZ(0);
+  will-change: transform;
 }
