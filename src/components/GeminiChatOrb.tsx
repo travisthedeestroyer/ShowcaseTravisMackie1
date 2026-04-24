@@ -120,10 +120,10 @@ function OrbCanvas({ orbState }: { orbState: OrbState }) {
 
     // Layered fills
     const grad1 = ctx.createRadialGradient(cx - baseR * 0.2, cy - baseR * 0.2, 0, cx, cy, baseR * 1.4);
-    grad1.addColorStop(0, \`hsla(\${hue - 20}, 80%, 72%, 0.95)\`);
-    grad1.addColorStop(0.4, \`hsla(\${hue}, 70%, 60%, 0.85)\`);
-    grad1.addColorStop(0.75, \`hsla(\${hue + 40}, 65%, 50%, 0.75)\`);
-    grad1.addColorStop(1, \`hsla(\${hue + 60}, 60%, 40%, 0.4)\`);
+    grad1.addColorStop(0, `hsla(${hue - 20}, 80%, 72%, 0.95)`);
+    grad1.addColorStop(0.4, `hsla(${hue}, 70%, 60%, 0.85)`);
+    grad1.addColorStop(0.75, `hsla(${hue + 40}, 65%, 50%, 0.75)`);
+    grad1.addColorStop(1, `hsla(${hue + 60}, 60%, 40%, 0.4)`);
     ctx.fillStyle = grad1;
     ctx.fill();
 
@@ -143,8 +143,8 @@ function OrbCanvas({ orbState }: { orbState: OrbState }) {
       const ringR = baseR * (1.05 + ring * 0.1 + Math.sin(time + ring) * 0.015);
       const alpha = (0.12 - ring * 0.035) * (chaos / 0.5 + 0.5);
       const ringGrad = ctx.createRadialGradient(cx, cy, ringR * 0.85, cx, cy, ringR * 1.15);
-      ringGrad.addColorStop(0, \`hsla(\${hue + ring * 15}, 80%, 65%, \${alpha})\`);
-      ringGrad.addColorStop(1, \`hsla(\${hue + ring * 15}, 80%, 65%, 0)\`);
+      ringGrad.addColorStop(0, `hsla(${hue + ring * 15}, 80%, 65%, ${alpha})`);
+      ringGrad.addColorStop(1, `hsla(${hue + ring * 15}, 80%, 65%, 0)`);
       ctx.beginPath();
       ctx.arc(cx, cy, ringR, 0, Math.PI * 2);
       ctx.fillStyle = ringGrad;
