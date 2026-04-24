@@ -5,7 +5,7 @@ import { Navbar } from "./components/Navbar";
 import { Hero } from "./components/Hero";
 import { About } from "./components/About";
 import { Projects } from "./components/Projects";
-import { VideoIntelligence } from "./components/VideoIntelligence";
+import { GeminiChatOrb } from "./components/GeminiChatOrb";
 import { Terminal } from "./components/Terminal";
 import { Skills } from "./components/Skills";
 import { Contact } from "./components/Contact";
@@ -50,7 +50,7 @@ export default function App() {
         <Hero />
         <About />
         <Projects />
-        <VideoIntelligence />
+        <GeminiChatOrb />
         <Terminal />
         <Skills />
         <Contact />
