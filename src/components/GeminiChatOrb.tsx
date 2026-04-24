@@ -489,11 +489,11 @@ export function GeminiChatOrb() {
               )}
               <button
                 onClick={() => setShowKeyModal(true)}
-                className={\`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all \${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
                   hasKey
                     ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-200"
                     : "bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200"
-                }\`}
+                }`}
               >
                 <Key className="w-3 h-3" />
                 {hasKey ? "Key set" : "Add key"}
@@ -608,15 +608,15 @@ export function GeminiChatOrb() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -8 }}
                   transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                  className={\`flex \${msg.role === "user" ? "justify-end" : "justify-start"}\`}
+                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                 >
-                  <div className={\`group relative max-w-[85%] \${msg.role === "user" ? "items-end" : "items-start"}\`}>
+                  <div className={`group relative max-w-[85%] ${msg.role === "user" ? "items-end" : "items-start"}`}>
                     <div
-                      className={\`px-4 py-3 rounded-2xl text-sm leading-relaxed \${
+                      className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${
                         msg.role === "user"
                           ? "bg-gradient-to-br from-blue-500 to-violet-500 text-white rounded-br-sm"
                           : "bg-white/70 border border-black/[0.06] text-ink rounded-bl-sm"
-                      }\`}
+                      }`}
                     >
                       {msg.role === "assistant" && msg.content === "" ? (
                         <TypingDots />
