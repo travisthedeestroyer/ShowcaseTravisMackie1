@@ -1,0 +1,293 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* ============================================================
+   T³ — Calm Operating System · Earth Palette
+   (ported from Color.kt)
+   ============================================================ */
+:root {
+  --radius: 1.25rem;
+
+  /* Ink & text */
+  --earth-deep-espresso: #221E19;
+  --earth-secondary-text: #6E6357;
+
+  /* Brand accents */
+  --earth-terracotta: #C1613D;
+  --earth-warm-clay: #E4C6A6;
+  --earth-warm-sand: #F4EEE4;
+  --earth-sage-green: #5E8570;
+  --earth-slate-blue: #456175;
+
+  /* Glass surfaces (warm paper) */
+  --glass-surface-light: #F2FBF8F2;     /* ~95% L1 */
+  --glass-surface-card: #DBFBF6EE;      /* ~86% L2 */
+  --glass-surface-variant: #7AEBE2D3;    /* ~48% inset */
+  --glass-border: #1A241D14;            /* hairline */
+  --glass-border-accent: #4DC1613D;
+  --glass-border-cool: #4D5E8570;
+
+  /* Solid accent helpers */
+  --bento-deep-purple: #FCF9F3;          /* text on solid accent */
+  --bento-purple-container: #1FC1613D;   /* terracotta tint container */
+  --bento-text-purple: #8A4327;          /* deep terracotta text */
+
+  /* Status */
+  --cyber-alert-red: #B1472E;
+  --cyber-warning-yellow: #B07A1E;
+
+  /* Terminal console palette */
+  --terminal-ink: #17140F;
+  --terminal-ink-raised: #221E18;
+  --terminal-text: #EDE5D6;
+  --terminal-muted: #8C8577;
+  --terminal-prompt: #DE8A63;
+  --terminal-green: #8FB79A;
+  --terminal-red: #D98A72;
+  --terminal-border: #1AF4EEE4;
+
+  /* shadcn token mapping onto earth palette */
+  --background: var(--earth-warm-sand);
+  --foreground: var(--earth-deep-espresso);
+  --card: var(--glass-surface-light);
+  --card-foreground: var(--earth-deep-espresso);
+  --popover: #FFFFFF;
+  --popover-foreground: var(--earth-deep-espresso);
+  --primary: var(--earth-terracotta);
+  --primary-foreground: var(--bento-deep-purple);
+  --secondary: var(--glass-surface-card);
+  --secondary-foreground: var(--earth-deep-espresso);
+  --muted: var(--glass-surface-variant);
+  --muted-foreground: var(--earth-secondary-text);
+  --accent: var(--bento-purple-container);
+  --accent-foreground: var(--bento-text-purple);
+  --destructive: var(--cyber-alert-red);
+  --border: var(--glass-border);
+  --input: #E7DFCF;
+  --ring: var(--earth-terracotta);
+  --chart-1: var(--earth-terracotta);
+  --chart-2: var(--earth-sage-green);
+  --chart-3: var(--earth-slate-blue);
+  --chart-4: var(--earth-warm-clay);
+  --chart-5: #B07A1E;
+  --sidebar: var(--glass-surface-light);
+  --sidebar-foreground: var(--earth-deep-espresso);
+  --sidebar-primary: var(--earth-terracotta);
+  --sidebar-primary-foreground: var(--bento-deep-purple);
+  --sidebar-accent: var(--bento-purple-container);
+  --sidebar-accent-foreground: var(--bento-text-purple);
+  --sidebar-border: var(--glass-border);
+  --sidebar-ring: var(--earth-terracotta);
+
+  /* T³ Omni-UI live tokens (mutated at runtime) */
+  --t3-spacing-scale: 1;        /* 0.6..1.6 */
+  --t3-radius-scale: 1;          /* 0.3..2.0 */
+  --t3-type-scale: 1;            /* 0.85..1.25 (NEW) */
+  --t3-accent-hue: 0;            /* -30..30deg (NEW) */
+  --t3-motion-duration: 1;       /* 0..2 (NEW speed multiplier) */
+
+  /* T³ spacing scale (SudoSpacing) — multiplied live */
+  --t3-space-xs: calc(0.25rem * var(--t3-spacing-scale));
+  --t3-space-sm: calc(0.5rem * var(--t3-spacing-scale));
+  --t3-space-md: calc(0.75rem * var(--t3-spacing-scale));
+  --t3-space-lg: calc(1rem * var(--t3-spacing-scale));
+  --t3-space-xl: calc(1.25rem * var(--t3-spacing-scale));
+  --t3-space-xxl: calc(1.75rem * var(--t3-spacing-scale));
+
+  /* T³ radii (SudoRadii) — multiplied live, except pill */
+  --t3-radius-pill: 9999px;
+  --t3-radius-chip: calc(0.75rem * var(--t3-radius-scale));
+  --t3-radius-tile: calc(1rem * var(--t3-radius-scale));
+  --t3-radius-card: calc(1.25rem * var(--t3-radius-scale));
+  --t3-radius-sheet: calc(1.75rem * var(--t3-radius-scale));
+
+  /* Active generative theme (defaults to AuraTerracotta) */
+  --t3-theme-primary: #D97757;
+  --t3-theme-secondary: #D9A05B;
+  --t3-theme-tertiary: #708B75;
+  --t3-theme-text: #22201D;
+  --t3-theme-glass-alpha: 0.35;
+  --t3-theme-bg-1: #FBF7EE;
+  --t3-theme-bg-2: #F2EAD8;
+  --t3-theme-bg-3: #E9DFCE;
+  --t3-theme-bg-4: #E5D2C2;
+}
+
+.dark {
+  --background: #0D1117;
+  --foreground: #E6E1D8;
+  --card: #161B22;
+  --card-foreground: #E6E1D8;
+  --popover: #1C2128;
+  --popover-foreground: #E6E1D8;
+  --primary: #D97757;
+  --primary-foreground: #FCF9F3;
+  --secondary: #21262D;
+  --secondary-foreground: #E6E1D8;
+  --muted: #21262D;
+  --muted-foreground: #8B949E;
+  --accent: #2D1A12;
+  --accent-foreground: #E8B89A;
+  --destructive: #E5534B;
+  --border: #30363D;
+  --input: #21262D;
+  --ring: #D97757;
+  --earth-warm-sand: #0D1117;
+  --earth-deep-espresso: #E6E1D8;
+  --glass-surface-light: #161B22;
+  --glass-surface-card: #1C2128;
+  --glass-border: #30363D;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "ss01", "cv01";
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection {
+    background: color-mix(in srgb, var(--earth-terracotta) 28%, transparent);
+  }
+}
+
+/* ============================================================
+   T³ custom scrollbar styling
+   ============================================================ */
+.t3-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--earth-terracotta) 35%, transparent) transparent;
+}
+.t3-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.t3-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.t3-scroll::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--earth-terracotta) 30%, transparent);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.t3-scroll::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--earth-terracotta) 50%, transparent);
+  background-clip: padding-box;
+}
+.t3-scroll-dark {
+  scrollbar-color: color-mix(in srgb, var(--terminal-text) 25%, transparent) transparent;
+}
+.t3-scroll-dark::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--terminal-text) 22%, transparent);
+}
+
+/* ============================================================
+   T³ utility helpers
+   ============================================================ */
+.t3-glass {
+  background: var(--glass-surface-light);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(12px) saturate(140%);
+}
+.t3-glass-card {
+  background: var(--glass-surface-card);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(10px) saturate(130%);
+}
+.t3-terminal-surface {
+  background: var(--terminal-ink);
+  border: 1px solid var(--terminal-border);
+  color: var(--terminal-text);
+}
+.t3-mono {
+  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-feature-settings: "zero", "ss01";
+}
+.t3-reduced-motion *,
+.t3-reduced-motion *::before,
+.t3-reduced-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
+
+/* T³ shimmer (for generating placeholders) */
+@keyframes t3-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.t3-shimmer {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--earth-terracotta) 14%, transparent) 0%,
+    color-mix(in srgb, var(--earth-terracotta) 28%, transparent) 50%,
+    color-mix(in srgb, var(--earth-terracotta) 14%, transparent) 100%
+  );
+  background-size: 200% 100%;
+  animation: t3-shimmer 1.6s linear infinite;
+}
+
+/* T³ fade-in */
+@keyframes t3-fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.t3-fade-up {
+  animation: t3-fade-up 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Focus ring refinement */
+.t3-focus:focus-visible {
+  outline: 2px solid var(--earth-terracotta);
+  outline-offset: 2px;
+}
+
+/* Sentence-case headings (T³ design language) */
+.t3-sentence {
+  text-transform: none;
+}
